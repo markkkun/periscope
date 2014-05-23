@@ -53,6 +53,12 @@ class Subtitulos(SubtitleDatabase.SubtitleDB):
         fname = unicode(self.getFileName(filepath).lower())
         guessedData = self.guessFileData(fname)
         if guessedData['type'] == 'tvshow':
+
+            if "es" in langs:
+                langs.append("es-es")
+                langs.append("es-la")
+            
+            log.debug("Languagess choosen: %s" % langs)
             subs = self.query(guessedData['name'], guessedData['season'], guessedData['episode'], guessedData['teams'], langs)
             return subs
         else:
