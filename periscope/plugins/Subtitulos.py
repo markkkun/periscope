@@ -30,11 +30,12 @@ LANGUAGES = {u"English (US)" : "en",
              u"French" : "fr",
              u"Brazilian" : "pt-br",
              u"Portuguese" : "pt",
-             u"Español (Latinoamérica)" : "es",
-             u"Español (España)" : "es",
+             u"Español (Latinoamérica)" : "es-la",
+             u"Español (España)" : "es-es",
              u"Español" : "es",
              u"Italian" : "it",
-             u"Català" : "ca"}
+             u"Català" : "ca",
+             u"Galego" : "ga"}
 
 class Subtitulos(SubtitleDatabase.SubtitleDB):
     url = "http://www.subtitulos.es"
@@ -45,7 +46,6 @@ class Subtitulos(SubtitleDatabase.SubtitleDB):
         #http://www.subtitulos.es/dexter/4x01
         self.host = "http://www.subtitulos.es"
         self.release_pattern = re.compile("Versi&oacute;n (.+) ([0-9]+).([0-9])+ megabytes")
-        
 
     def process(self, filepath, langs):
         ''' main method to call on the plugin, pass the filename and the wished 
@@ -71,8 +71,8 @@ class Subtitulos(SubtitleDatabase.SubtitleDB):
         for subs in soup("div", {"id":"version"}):
             version = subs.find("p", {"class":"title-sub"})
             subteams = self.release_pattern.search("%s"%version.contents[1]).group(1).lower()            
-            teams = set(teams)
-            subteams = self.listTeams([subteams], [".", "_", " ", "/"])
+            teams = self.listTeams(teams, [".", "_", " ", "/", "-"])
+            subteams = self.listTeams([subteams], [".", "_", " ", "/", "-"])
             
             log.debug("Team from website: %s" %subteams)
             log.debug("Team from file: %s" %teams)
@@ -81,16 +81,16 @@ class Subtitulos(SubtitleDatabase.SubtitleDB):
             for lang_html in nexts:
                 langLI = lang_html.findNext("li",{"class":"li-idioma"} )
                 lang = self.getLG(langLI.find("strong").contents[0].string.strip())
-        
-                statusLI = lang_html.findNext("li",{"class":"li-estado green"} )
+                
+                statusLI = lang_html.findNext("li",{"class":re.compile("li-estado.*")} )
                 status = statusLI.contents[0].string.strip()
 
-                link = statusLI.findNext("span", {"class":"descargar green"}).find("a")["href"]
+                link = statusLI.findNext("span", {"class":re.compile("descargar.*")})
                 if status == "Completado" and subteams.issubset(teams) and (not langs or lang in langs) :
                     result = {}
                     result["release"] = "%s.S%.2dE%.2d.%s" %(name.replace("-", ".").title(), int(season), int(episode), '.'.join(subteams))
                     result["lang"] = lang
-                    result["link"] = link
+                    result["link"] = link.find("a")["href"]
                     result["page"] = searchurl
                     sublinks.append(result)
                 
